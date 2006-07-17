@@ -109,7 +109,7 @@ __END__
 
 =head1 NAME
 
-Object::Declare - Declare object constructor
+Object::Declare - Declarative object constructor
 
 =head1 SYNOPSIS
 
@@ -133,10 +133,10 @@ Object::Declare - Declare object constructor
 =head1 DESCRIPTION
 
 This module exports one function, C<declare>, for building named
-objects with a declare syntax, similar to how L<Jifty::DBI::Schema>
+objects with a declarative syntax, similar to how L<Jifty::DBI::Schema>
 defines its columns.
 
-Using a flexible import list syntax, one can change exported helper
+Using a flexible C<import> interface, one can change exported helper
 functions names (I<declarator>), words to link labels and values together
 (I<copula>), and the table of named classes to declare (I<mapping>):
 

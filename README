@@ -1,16 +1,19 @@
 NAME
-    Object::Declare - Declare object constructor
+    Object::Declare - Declarative object constructor
 
 SYNOPSIS
         use Object::Declare ['MyApp::Column', 'MyApp::Param'];
 
         my $objects = declare {
-            param 'foo' =>
-                is immutable,
-                valid_values are qw( more values );
-            column 'bar' =>
-                field1 is 'value',
-                field2 is 'some_other_value';
+
+        param foo =>
+            is immutable,
+            valid_values are qw( more values );
+
+        column bar =>
+            field1 is 'value',
+            field2 is 'some_other_value';
+
         };
 
         print $objects->{foo}; # a MyApp::Param object
@@ -18,10 +21,10 @@ SYNOPSIS
 
 DESCRIPTION
     This module exports one function, "declare", for building named objects
-    with a declare syntax, similar to how Jifty::DBI::Schema defines its
+    with a declarative syntax, similar to how Jifty::DBI::Schema defines its
     columns.
 
-    Using a flexible import list syntax, one can change exported helper
+    Using a flexible "import" interface, one can change exported helper
     functions names (*declarator*), words to link labels and values together
     (*copula*), and the table of named classes to declare (*mapping*):
 
