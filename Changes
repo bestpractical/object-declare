@@ -1,3 +1,9 @@
+[Changes for 0.03 - 2006-07-17]
+
+* The declarator can now be exported to another package;
+  this works because internally, each declarator remembers
+  the class mappings and copula it was associated with.
+
 [Changes for 0.02 - 2006-07-17]
 
 * Documentation cleanup; no functional changes.

@@ -1,14 +1,11 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.02';
+$Object::Declare::VERSION = '0.03';
 
 use 5.006;
 use strict;
 use warnings;
 use Carp;
 use Sub::Override;
-
-my %ClassMapping;
-my %ClassCopula;
 
 sub import {
     my $class       = shift;
@@ -37,21 +34,21 @@ sub import {
 
     {
         no strict 'refs';
-        *{"$from\::$_"} = \&declare for @$declarator;
+        *{"$from\::$_"} = sub (&) {
+            unshift @_, ($mapping, $copula);
+            goto &_declare;
+        } for @$declarator;
         *{"$from\::$_"} = \&{"$from\::$_"} for keys %$mapping;
         *{"UNIVERSAL::$_"} = \&{"UNIVERSAL::$_"} for @$copula;
         *{"$_\::AUTOLOAD"} = \&{"$_\::AUTOLOAD"} for @$copula;
     }
-
-    $ClassMapping{$from} = $mapping;
-    $ClassCopula{$from}  = $copula;
 }
 
-sub declare (&) {
-    my $code = shift;
-    my $from = caller;
-    my $mapping = $ClassMapping{$from} or carp "No mapping defined in $from\n";
-    my $copula  = $ClassCopula{$from} or carp "No copula defined in $from\n";
+sub _declare (&) {
+    my $mapping = shift;
+    my $copula  = shift;
+    my $code    = shift;
+    my $from    = caller;
 
     # Table of collected objects.
     my $objects = {};
