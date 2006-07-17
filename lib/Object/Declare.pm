@@ -1,5 +1,5 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.01';
+$Object::Declare::VERSION = '0.02';
 
 use 5.006;
 use strict;
