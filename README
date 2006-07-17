@@ -21,10 +21,9 @@ DESCRIPTION
     with a declare syntax, similar to how Jifty::DBI::Schema defines its
     columns.
 
-    Using a flexible import list syntax, one can change the exported helper
-    function (*declarator*), the list of words to link labels and values
-    together (*copula*), and the table of named classes to declare
-    (*mapping*):
+    Using a flexible import list syntax, one can change exported helper
+    functions names (*declarator*), words to link labels and values together
+    (*copula*), and the table of named classes to declare (*mapping*):
 
         use Object::Declare
             declarator  => 'declare',       # this is the default

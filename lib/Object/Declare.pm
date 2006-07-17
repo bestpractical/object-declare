@@ -133,8 +133,8 @@ This module exports one function, C<declare>, for building named
 objects with a declare syntax, similar to how L<Jifty::DBI::Schema>
 defines its columns.
 
-Using a flexible import list syntax, one can change the exported helper
-function (I<declarator>), the list of words to link labels and values together
+Using a flexible import list syntax, one can change exported helper
+functions names (I<declarator>), words to link labels and values together
 (I<copula>), and the table of named classes to declare (I<mapping>):
 
     use Object::Declare
