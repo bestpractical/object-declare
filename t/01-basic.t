@@ -8,7 +8,7 @@ my $objects = declare {
 
 column x =>
     field1 is 'xxx',
-    field2 is 'XXX',
+    field2 are 'XXX', 'XXX',
     is field3;
 
 column y =>
@@ -20,7 +20,7 @@ column y =>
 is_deeply($objects => {
     x => {
             'field1' => 'xxx',
-            'field2' => 'XXX',
+            'field2' => ['XXX', 'XXX'],
             'field3' => 1
             },
     y => {

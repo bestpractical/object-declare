@@ -1,5 +1,5 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.03';
+$Object::Declare::VERSION = '0.04';
 
 use 5.006;
 use strict;
@@ -97,7 +97,21 @@ sub _make_object {
 package Object::Declare::Katamari;
 
 sub unroll {
-    map { ref($_) eq __PACKAGE__ ? $_->unroll : $_ } @{$_[0]} 
+    my @katamari = @{$_[0]} or return ();
+    my $field = shift @katamari or return ();
+    my @unrolled;
+
+    unshift @unrolled, pop(@katamari)->unroll
+        while ref($katamari[-1]) eq __PACKAGE__; 
+
+    if (@katamari == 1) {
+        # Singular value
+        return($field => @katamari, @unrolled);
+    }
+    else {
+        # Plural value
+        return($field => \@katamari, @unrolled);
+    }
 }
 
 1;

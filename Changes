@@ -1,3 +1,12 @@
+[Changes for 0.04 - 2006-07-17]
+
+* Support for plural values via "are":
+
+    column x =>
+        field1 is 'xxx',
+        field2 are 'XXX', 'XXX', # <-- Plural value
+        is field3;
+
 [Changes for 0.03 - 2006-07-17]
 
 * The declarator can now be exported to another package;
