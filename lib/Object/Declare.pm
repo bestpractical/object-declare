@@ -116,10 +116,10 @@ Object::Declare - Declare object constructor
     use Object::Declare ['MyApp::Column', 'MyApp::Param'];
 
     my $objects = declare {
-        param 'foo' =>
+        param foo =>
             is immutable,
             valid_values are qw( more values );
-        column 'bar' =>
+        column bar =>
             field1 is 'value',
             field2 is 'some_other_value';
     };
