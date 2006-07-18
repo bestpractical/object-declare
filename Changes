@@ -1,3 +1,8 @@
+[Changes for 0.05 - 2006-07-17]
+
+* Support for ordered declarations, via list-context return of 
+  "declare".  In scalar context, it still returns a hash reference.
+
 [Changes for 0.04 - 2006-07-17]
 
 * Support for plural values via "are":

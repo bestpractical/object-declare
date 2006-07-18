@@ -1,5 +1,5 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.04';
+$Object::Declare::VERSION = '0.05';
 
 use 5.006;
 use strict;
@@ -51,7 +51,7 @@ sub _declare (&) {
     my $from    = caller;
 
     # Table of collected objects.
-    my $objects = {};
+    my @objects;
 
     no strict 'refs';
     no warnings 'redefine';
@@ -62,13 +62,13 @@ sub _declare (&) {
     $override->replace("UNIVERSAL::$_" => \&_universal) for @$copula;
     $override->replace("$_\::AUTOLOAD" => \&_autoload) for @$copula;
     $override->replace(
-        "$from\::$_" => _make_object($mapping->{$_} => $objects)
+        "$from\::$_" => _make_object($mapping->{$_} => \@objects)
     ) for keys %$mapping;
 
     # Let's play katamari!
     $code->();
 
-    return $objects;
+    return(wantarray ? @objects : { @objects });
 }
 
 sub _universal {
@@ -90,7 +90,7 @@ sub _make_object {
 
     return sub {
         my ($name, $katamari) = @_;
-        $schema->{$name} = $class->new($katamari ? $katamari->unroll : ());
+        push @$schema, $name => scalar $class->new($katamari ? $katamari->unroll : ());
     };
 }
 
@@ -126,7 +126,7 @@ Object::Declare - Declarative object constructor
 
     use Object::Declare ['MyApp::Column', 'MyApp::Param'];
 
-    my $objects = declare {
+    my %objects = declare {
 
     param foo =>
         is immutable,
@@ -146,6 +146,10 @@ Object::Declare - Declarative object constructor
 This module exports one function, C<declare>, for building named
 objects with a declarative syntax, similar to how L<Jifty::DBI::Schema>
 defines its columns.
+
+In list context, C<declare> returns a list of name/object pairs in the
+order of declaration (allowing duplicates), suitable for putting into a hash.
+In scalar context, C<declare> returns a hash reference.
 
 Using a flexible C<import> interface, one can change exported helper
 functions names (I<declarator>), words to link labels and values together
