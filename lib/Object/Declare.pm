@@ -1,5 +1,5 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.06';
+$Object::Declare::VERSION = '0.07';
 
 use 5.006;
 use strict;
@@ -95,8 +95,8 @@ sub _make_object {
     my ($class, $schema) = @_;
 
     return sub {
-        my ($name, $katamari) = @_;
-        push @$schema, $name => scalar $class->new($katamari ? $katamari->unroll : ());
+        my $name = shift;
+        push @$schema, $name => scalar $class->new(map { $_->unroll } @_);
     };
 }
 

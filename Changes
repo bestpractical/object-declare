@@ -1,3 +1,9 @@
+[Changes for 0.07 - 2006-07-18]
+
+* Chained "is foo, is bar, is baz" now works; previously only
+  the first one is recognized.
+  Reported by: Steven Little
+
 [Changes for 0.06 - 2006-07-17]
 
 * Documentation cleanup; no functional changes.
