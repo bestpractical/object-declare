@@ -1,3 +1,10 @@
+[Changes for 0.08 - 2006-07-18]
+
+* Added lots of documentation and comments.
+
+* Now works correctly even if at runtime the symbol table entries
+  created at compile-time get deleted.
+
 [Changes for 0.07 - 2006-07-18]
 
 * Chained "is foo, is bar, is baz" now works; previously only

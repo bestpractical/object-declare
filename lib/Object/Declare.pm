@@ -1,9 +1,11 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.07';
 
 use 5.006;
 use strict;
 use warnings;
+
+$Object::Declare::VERSION = '0.08';
+
 use Carp;
 use Sub::Override;
 
@@ -12,38 +14,43 @@ sub import {
     my %args        = ((@_ and ref($_[0])) ? (mapping => $_[0]) : @_) or return; 
     my $from        = caller;
     my $mapping     = $args{mapping} or return;
-    my $declarator  = $args{declarator} || 'declare';
-    my $copula      = $args{copula} || ['is', 'are'];
+    my $declarator  = $args{declarator} || ['declare'];
+    my $copula      = $args{copula}     || ['is', 'are'];
 
     if (ref($mapping) eq 'ARRAY') {
-         # rewrite "MyApp::Foo" into simply "foo"
-         $mapping = {map {
-             my $helper = $_;
-             $helper =~ s/.*:://;
-             (lc($helper) => $_);
-         } @$mapping};
+        # rewrite "MyApp::Foo" into simply "foo"
+        $mapping = {
+            map {
+                my $helper = $_;
+                $helper =~ s/.*:://;
+                (lc($helper) => $_);
+            } @$mapping
+        };
     }
 
-    if (ref($declarator) ne 'ARRAY') {
-        $declarator = [$declarator];
+    # Both declarator and copula can contain more than one entries;
+    # normalize into an arrayref if we only have on entry.
+    $declarator = [$declarator] unless ref($declarator) eq 'ARRAY';
+    $copula     = [$copula]     unless ref($copula) eq 'ARRAY';
+
+    # Install declarator functions into caller's package, remembering
+    # the mapping and copula set for this declarator.
+    foreach my $sym (@$declarator) {
+        no strict 'refs';
+
+        *{"$from\::$sym"} = sub (&) {
+            unshift @_, ($mapping, $copula);
+            goto &_declare;
+        };
     }
-
-    if (ref($copula) ne 'ARRAY') {
-        $copula = [$copula];
-    }
-
-    no strict 'refs';
-
-    # Install declarator functions into caller's package
-    *{"$from\::$_"} = sub (&) {
-        unshift @_, ($mapping, $copula);
-        goto &_declare;
-    } for @$declarator;
 
     # Establish prototypes (same as "use subs") so Sub::Override can work
-    *{"$from\::$_"}     = \&{"$from\::$_"} for keys %$mapping;
-    *{"UNIVERSAL::$_"}  = \&{"UNIVERSAL::$_"} for @$copula;
-    *{"$_\::AUTOLOAD"}  = \&{"$_\::AUTOLOAD"} for @$copula;
+    {
+        no strict 'refs';
+        *{"$from\::$_"}     = \&{"$from\::$_"} for keys %$mapping;
+        *{"UNIVERSAL::$_"}  = \&{"UNIVERSAL::$_"} for @$copula;
+        *{"$_\::AUTOLOAD"}  = \&{"$_\::AUTOLOAD"} for @$copula;
+    }
 }
 
 sub _declare {
@@ -53,23 +60,40 @@ sub _declare {
     # Table of collected objects.
     my @objects;
 
-    no strict 'refs';
-    no warnings 'redefine';
+    # Establish a lexical extent for overrided symbols; they will be
+    # restored automagically upon scope exit.
     my $override = Sub::Override->new;
+    my $replace = sub {
+        no strict 'refs';
+        no warnings 'redefine';
+        my ($sym, $code) = @_;
 
-    # in DSL mode; install &AUTOLOAD to collect all unrecognized calls
-    # into a katamari structure and analyze it later.
+        # Do the "use subs" predeclaration again before overriding, because
+        # Sub::Override cannot handle empty symbol slots.  This is normally
+        # redundant (&import already did that), but we do it here anyway to
+        # guard against runtime deletion of symbol table entries.
+        *$sym = \&$sym;
+
+        # Now replace the symbol for real.
+        $override->replace($sym => $code);
+    };
+
+    # In DSL (domain-specific language) mode; install AUTOLOAD to handle all
+    # unrecognized calls for "foo is 1" (which gets translated to "is->foo(1)",
+    # and UNIVERSAL to collect "is foo" (which gets translated to "foo->is".
+    # The arguments are rolled into a Katamari structure for later analysis.
     foreach my $sym (@$copula) {
-        $override->replace("UNIVERSAL::$sym" => \&_universal);
-        $override->replace("$sym\::AUTOLOAD" => \&_autoload);
+        $replace->("UNIVERSAL::$sym" => \&_universal);
+        $replace->("$sym\::AUTOLOAD" => \&_autoload);
     }
 
+    # Now install the collector symbols from class mappings 
     while (my ($sym, $class) = each %$mapping) {
-        $override->replace("$from\::$sym" => _make_object($class => \@objects));
+        $replace->("$from\::$sym" => _make_object($class => \@objects));
     }
 
-    # Let's play katamari!
-    $code->();
+    # Let's play Katamari!
+    &$code;
 
     # In scalar context, returns hashref; otherwise preserve ordering
     return(wantarray ? @objects : { @objects });
@@ -90,7 +114,7 @@ sub _autoload {
     bless(\@_, 'Object::Declare::Katamari');
 }
 
-# Make a star from the katamari!
+# Make a star from the Katamari!
 sub _make_object {
     my ($class, $schema) = @_;
 
@@ -102,6 +126,7 @@ sub _make_object {
 
 package Object::Declare::Katamari;
 
+# Unroll a Katamari structure into constructor arguments.
 sub unroll {
     my @katamari = @{$_[0]} or return ();
     my $field = shift @katamari or return ();
@@ -172,6 +197,20 @@ functions names (I<declarator>), words to link labels and values together
 After the declarator block finishes execution, all helper functions are
 removed from the package.  Same-named functions (such as C<&is> and C<&are>)
 that existed before the declarator's execution are restored correctly.
+
+=head1 NOTES
+
+If you export the declarator to another package via C<@EXPORT>, be sure 
+to export all mapping keys as well.  For example, this will work for the
+example above:
+
+    our @EXPORT = qw( declare column param );
+
+But this will not:
+
+    our @EXPORT = qw( declare );
+
+The copula are not turned into functions, so there is no need to export them.
 
 =head1 AUTHORS
 
