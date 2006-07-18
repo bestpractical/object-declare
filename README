@@ -4,7 +4,7 @@ NAME
 SYNOPSIS
         use Object::Declare ['MyApp::Column', 'MyApp::Param'];
 
-        my $objects = declare {
+        my %objects = declare {
 
         param foo =>
             is immutable,
@@ -16,13 +16,17 @@ SYNOPSIS
 
         };
 
-        print $objects->{foo}; # a MyApp::Param object
-        print $objects->{bar}; # a MyApp::Column object
+        print $objects{foo}; # a MyApp::Param object
+        print $objects{bar}; # a MyApp::Column object
 
 DESCRIPTION
     This module exports one function, "declare", for building named objects
     with a declarative syntax, similar to how Jifty::DBI::Schema defines its
     columns.
+
+    In list context, "declare" returns a list of name/object pairs in the
+    order of declaration (allowing duplicates), suitable for putting into a
+    hash. In scalar context, "declare" returns a hash reference.
 
     Using a flexible "import" interface, one can change exported helper
     functions names (*declarator*), words to link labels and values together

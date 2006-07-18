@@ -1,5 +1,5 @@
 package Object::Declare;
-$Object::Declare::VERSION = '0.05';
+$Object::Declare::VERSION = '0.06';
 
 use 5.006;
 use strict;
@@ -32,23 +32,23 @@ sub import {
         $copula = [$copula];
     }
 
-    {
-        no strict 'refs';
-        *{"$from\::$_"} = sub (&) {
-            unshift @_, ($mapping, $copula);
-            goto &_declare;
-        } for @$declarator;
-        *{"$from\::$_"} = \&{"$from\::$_"} for keys %$mapping;
-        *{"UNIVERSAL::$_"} = \&{"UNIVERSAL::$_"} for @$copula;
-        *{"$_\::AUTOLOAD"} = \&{"$_\::AUTOLOAD"} for @$copula;
-    }
+    no strict 'refs';
+
+    # Install declarator functions into caller's package
+    *{"$from\::$_"} = sub (&) {
+        unshift @_, ($mapping, $copula);
+        goto &_declare;
+    } for @$declarator;
+
+    # Establish prototypes (same as "use subs") so Sub::Override can work
+    *{"$from\::$_"}     = \&{"$from\::$_"} for keys %$mapping;
+    *{"UNIVERSAL::$_"}  = \&{"UNIVERSAL::$_"} for @$copula;
+    *{"$_\::AUTOLOAD"}  = \&{"$_\::AUTOLOAD"} for @$copula;
 }
 
-sub _declare (&) {
-    my $mapping = shift;
-    my $copula  = shift;
-    my $code    = shift;
-    my $from    = caller;
+sub _declare {
+    my ($mapping, $copula, $code) = @_;
+    my $from = caller;
 
     # Table of collected objects.
     my @objects;
@@ -59,23 +59,29 @@ sub _declare (&) {
 
     # in DSL mode; install &AUTOLOAD to collect all unrecognized calls
     # into a katamari structure and analyze it later.
-    $override->replace("UNIVERSAL::$_" => \&_universal) for @$copula;
-    $override->replace("$_\::AUTOLOAD" => \&_autoload) for @$copula;
-    $override->replace(
-        "$from\::$_" => _make_object($mapping->{$_} => \@objects)
-    ) for keys %$mapping;
+    foreach my $sym (@$copula) {
+        $override->replace("UNIVERSAL::$sym" => \&_universal);
+        $override->replace("$sym\::AUTOLOAD" => \&_autoload);
+    }
+
+    while (my ($sym, $class) = each %$mapping) {
+        $override->replace("$from\::$sym" => _make_object($class => \@objects));
+    }
 
     # Let's play katamari!
     $code->();
 
+    # In scalar context, returns hashref; otherwise preserve ordering
     return(wantarray ? @objects : { @objects });
 }
 
+# Turn "is some_field" into "some_field is 1"
 sub _universal {
     push @_, 1;
     bless(\@_, 'Object::Declare::Katamari');
 }
 
+# Handle "some_field is $some_value"
 sub _autoload {
     shift;
     my $field = our $AUTOLOAD;
@@ -84,7 +90,7 @@ sub _autoload {
     bless(\@_, 'Object::Declare::Katamari');
 }
 
-# Make a Star from the katamari!
+# Make a star from the katamari!
 sub _make_object {
     my ($class, $schema) = @_;
 
@@ -105,11 +111,11 @@ sub unroll {
         while ref($katamari[-1]) eq __PACKAGE__; 
 
     if (@katamari == 1) {
-        # Singular value
+        # single value: "is foo"
         return($field => @katamari, @unrolled);
     }
     else {
-        # Plural value
+        # Multiple values: "are qw( foo bar baz )"
         return($field => \@katamari, @unrolled);
     }
 }
@@ -138,8 +144,8 @@ Object::Declare - Declarative object constructor
 
     };
 
-    print $objects->{foo}; # a MyApp::Param object
-    print $objects->{bar}; # a MyApp::Column object
+    print $objects{foo}; # a MyApp::Param object
+    print $objects{bar}; # a MyApp::Column object
 
 =head1 DESCRIPTION
 
