@@ -1,3 +1,8 @@
+[Changes for 0.09 - 2006-07-18]
+
+* The "mapping" interface now accepts arbitrary code reference as the
+  builder function, in addition to class names to call ->new to.
+
 [Changes for 0.08 - 2006-07-18]
 
 * Added lots of documentation and comments.

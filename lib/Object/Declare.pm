@@ -4,18 +4,24 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.08';
+$Object::Declare::VERSION = '0.09';
 
-use Carp;
 use Sub::Override;
 
 sub import {
     my $class       = shift;
     my %args        = ((@_ and ref($_[0])) ? (mapping => $_[0]) : @_) or return; 
     my $from        = caller;
+
     my $mapping     = $args{mapping} or return;
     my $declarator  = $args{declarator} || ['declare'];
     my $copula      = $args{copula}     || ['is', 'are'];
+
+    # Both declarator and copula can contain more than one entries;
+    # normalize into an arrayref if we only have on entry.
+    $mapping    = [$mapping]    unless ref($mapping);
+    $declarator = [$declarator] unless ref($declarator);
+    $copula     = [$copula]     unless ref($copula);
 
     if (ref($mapping) eq 'ARRAY') {
         # rewrite "MyApp::Foo" into simply "foo"
@@ -28,10 +34,14 @@ sub import {
         };
     }
 
-    # Both declarator and copula can contain more than one entries;
-    # normalize into an arrayref if we only have on entry.
-    $declarator = [$declarator] unless ref($declarator) eq 'ARRAY';
-    $copula     = [$copula]     unless ref($copula) eq 'ARRAY';
+    # Convert mapping targets into instantiation closures
+    if (ref($mapping) eq 'HASH') {
+        foreach my $key (keys %$mapping) {
+            my $val = $mapping->{$key};
+            next if ref($val); # already a callback, don't bother
+            $mapping->{$key} = sub { scalar($val->new(@_)) };
+        }
+    }
 
     # Install declarator functions into caller's package, remembering
     # the mapping and copula set for this declarator.
@@ -88,8 +98,8 @@ sub _declare {
     }
 
     # Now install the collector symbols from class mappings 
-    while (my ($sym, $class) = each %$mapping) {
-        $replace->("$from\::$sym" => _make_object($class => \@objects));
+    while (my ($sym, $build) = each %$mapping) {
+        $replace->("$from\::$sym" => _make_object($build => \@objects));
     }
 
     # Let's play Katamari!
@@ -116,11 +126,11 @@ sub _autoload {
 
 # Make a star from the Katamari!
 sub _make_object {
-    my ($class, $schema) = @_;
+    my ($build, $schema) = @_;
 
     return sub {
         my $name = shift;
-        push @$schema, $name => scalar $class->new(map { $_->unroll } @_);
+        push @$schema, $name => $build->(map { $_->unroll } @_);
     };
 }
 
@@ -187,11 +197,13 @@ functions names (I<declarator>), words to link labels and values together
 (I<copula>), and the table of named classes to declare (I<mapping>):
 
     use Object::Declare
-        declarator  => 'declare',       # this is the default
+        declarator  => 'declare',       # is the default
         copula      => ['is', 'are'],   # this is the default
         mapping     => {
-            column => 'MyApp::Column',
-            param  => 'MyApp::Param',
+            column => 'MyApp::Column',  # class name to call ->new to
+            param  => sub {             # arbitrary coderef also works
+                bless(\@_, 'MyApp::Param');
+            },
         };
 
 After the declarator block finishes execution, all helper functions are
