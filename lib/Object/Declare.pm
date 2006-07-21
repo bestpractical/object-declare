@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.09';
+$Object::Declare::VERSION = '0.10';
 
 use Sub::Override;
 
@@ -43,6 +43,11 @@ sub import {
         }
     }
 
+    if (ref($copula) eq 'ARRAY') {
+        # add an empty prefix to all copula
+        $copula = { map { $_ => '' } @$copula }
+    }
+
     # Install declarator functions into caller's package, remembering
     # the mapping and copula set for this declarator.
     foreach my $sym (@$declarator) {
@@ -58,8 +63,8 @@ sub import {
     {
         no strict 'refs';
         *{"$from\::$_"}     = \&{"$from\::$_"} for keys %$mapping;
-        *{"UNIVERSAL::$_"}  = \&{"UNIVERSAL::$_"} for @$copula;
-        *{"$_\::AUTOLOAD"}  = \&{"$_\::AUTOLOAD"} for @$copula;
+        *{"UNIVERSAL::$_"}  = \&{"UNIVERSAL::$_"} for keys %$copula;
+        *{"$_\::AUTOLOAD"}  = \&{"$_\::AUTOLOAD"} for keys %$copula;
     }
 }
 
@@ -92,9 +97,19 @@ sub _declare {
     # unrecognized calls for "foo is 1" (which gets translated to "is->foo(1)",
     # and UNIVERSAL to collect "is foo" (which gets translated to "foo->is".
     # The arguments are rolled into a Katamari structure for later analysis.
-    foreach my $sym (@$copula) {
-        $replace->("UNIVERSAL::$sym" => \&_universal);
-        $replace->("$sym\::AUTOLOAD" => \&_autoload);
+    while (my ($sym, $prefix) = each %$copula) {
+        $replace->( "UNIVERSAL::$sym" => sub {
+            # Turn "is some_field" into "some_field is 1"
+            bless([$prefix.$_[0], 1] => 'Object::Declare::Katamari');
+        } );
+        $replace->( "$sym\::AUTOLOAD" => sub {
+            # Handle "some_field is $some_value"
+            shift;
+            my $field = our $AUTOLOAD;
+            $field =~ s/.*:://;
+            unshift @_, $prefix.$field;
+            bless(\@_, 'Object::Declare::Katamari');
+        } );
     }
 
     # Now install the collector symbols from class mappings 
@@ -107,21 +122,6 @@ sub _declare {
 
     # In scalar context, returns hashref; otherwise preserve ordering
     return(wantarray ? @objects : { @objects });
-}
-
-# Turn "is some_field" into "some_field is 1"
-sub _universal {
-    push @_, 1;
-    bless(\@_, 'Object::Declare::Katamari');
-}
-
-# Handle "some_field is $some_value"
-sub _autoload {
-    shift;
-    my $field = our $AUTOLOAD;
-    $field =~ s/.*:://;
-    unshift @_, $field;
-    bless(\@_, 'Object::Declare::Katamari');
 }
 
 # Make a star from the Katamari!
@@ -197,8 +197,11 @@ functions names (I<declarator>), words to link labels and values together
 (I<copula>), and the table of named classes to declare (I<mapping>):
 
     use Object::Declare
-        declarator  => 'declare',       # is the default
-        copula      => ['is', 'are'],   # this is the default
+        declarator  => ['declare'],     # list of declarators
+        copula      => {                # list of words, or a map
+            is  => '',                  #  from copula to prefixes for
+            are => '',                  #  labels built with that copula
+        }
         mapping     => {
             column => 'MyApp::Column',  # class name to call ->new to
             param  => sub {             # arbitrary coderef also works

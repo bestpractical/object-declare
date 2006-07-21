@@ -1,9 +1,14 @@
 use strict;
 use Test::More tests => 3, import => ['is_deeply'];
-use ok 'Object::Declare' => {
-    column  => 'MyApp::Column',
-    alt_col => sub { return { alt => 1, @_ } }
-};
+use ok 'Object::Declare' => 
+    copula => {
+        is  => '',
+        are => 'plural_',
+    },
+    mapping => {
+        column  => 'MyApp::Column',
+        alt_col => sub { return { alt => 1, @_ } }
+    };
 
 sub MyApp::Column::new { shift; return { @_ } }
 
@@ -25,7 +30,7 @@ my @objects = do_declare;
 is_deeply(\@objects => [
     x => {
             'field1' => 'xxx',
-            'field2' => ['XXX', 'XXX'],
+            'plural_field2' => ['XXX', 'XXX'],
             'field3' => 1,
             'rw' => 1,
             'happy' => 1,
@@ -42,7 +47,7 @@ my $objects = do_declare;
 is_deeply($objects => {
     x => {
             'field1' => 'xxx',
-            'field2' => ['XXX', 'XXX'],
+            'plural_field2' => ['XXX', 'XXX'],
             'field3' => 1,
             'rw' => 1,
             'happy' => 1,

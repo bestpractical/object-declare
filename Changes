@@ -1,3 +1,9 @@
+[Changes for 0.10 - 2006-07-20]
+
+* The "copula" interface now accepts an arbitrary prefix for each
+  copula (defaults to ''), which can be used to distinguish labels
+  built by different copular words.
+
 [Changes for 0.09 - 2006-07-18]
 
 * The "mapping" interface now accepts arbitrary code reference as the
