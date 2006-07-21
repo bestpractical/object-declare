@@ -1,7 +1,15 @@
+[Changes for 0.12 - 2006-07-20]
+
+* The "isn't" keyword in 0.11 broke Test::More, and I can't find a
+  way to reconcile them, so it's now sadly retracted.
+
 [Changes for 0.11 - 2006-07-20]
 
 * Support the prefix ! operator on declarations, so negated ones
   such as "!is global" or "!global is $x" now work.
+  Requested by: Jesse Vincent
+
+* Also introduce the "isn't" negated copula.
   Requested by: Jesse Vincent
 
 [Changes for 0.10 - 2006-07-20]

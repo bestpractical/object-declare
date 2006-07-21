@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.11';
+$Object::Declare::VERSION = '0.12';
 
 use Sub::Override;
 
