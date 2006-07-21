@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.10';
+$Object::Declare::VERSION = '0.11';
 
 use Sub::Override;
 
@@ -15,7 +15,7 @@ sub import {
 
     my $mapping     = $args{mapping} or return;
     my $declarator  = $args{declarator} || ['declare'];
-    my $copula      = $args{copula}     || ['is', 'are'];
+    my $copula      = $args{copula}     || ['is', 'are', 'isn::t'];
 
     # Both declarator and copula can contain more than one entries;
     # normalize into an arrayref if we only have on entry.
@@ -136,6 +136,14 @@ sub _make_object {
 
 package Object::Declare::Katamari;
 
+use overload "!" => \&negation;
+
+sub negation {
+    my @katamari = @{$_[0]} or return ();
+    $katamari[1] = !$katamari[1];
+    return bless(\@katamari, ref($_[0]));
+}
+
 # Unroll a Katamari structure into constructor arguments.
 sub unroll {
     my @katamari = @{$_[0]} or return ();
@@ -170,6 +178,7 @@ Object::Declare - Declarative object constructor
     my %objects = declare {
 
     param foo =>
+       !is global,
         is immutable,
         valid_values are qw( more values );
 

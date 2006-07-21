@@ -1,3 +1,9 @@
+[Changes for 0.11 - 2006-07-20]
+
+* Support the prefix ! operator on declarations, so negated ones
+  such as "!is global" or "!global is $x" now work.
+  Requested by: Jesse Vincent
+
 [Changes for 0.10 - 2006-07-20]
 
 * The "copula" interface now accepts an arbitrary prefix for each

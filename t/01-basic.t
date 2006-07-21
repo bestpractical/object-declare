@@ -21,6 +21,7 @@ sub do_declare { declare {
         is field3;
 
     alt_col y =>
+        !is happy,
         field1 is 'yyy',
         field2 is 'YYY';
 } }
@@ -39,6 +40,7 @@ is_deeply(\@objects => [
             'field1' => 'yyy',
             'field2' => 'YYY',
             'alt'    => 1,
+            happy    => '',
             },
 ], 'object declared correctly (list context)');
 
@@ -56,6 +58,7 @@ is_deeply($objects => {
             'field1' => 'yyy',
             'field2' => 'YYY',
             'alt'    => 1,
+            happy    => '',
             },
 }, 'object declared correctly (scalar context)');
 
