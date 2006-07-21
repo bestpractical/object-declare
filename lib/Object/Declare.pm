@@ -15,7 +15,7 @@ sub import {
 
     my $mapping     = $args{mapping} or return;
     my $declarator  = $args{declarator} || ['declare'];
-    my $copula      = $args{copula}     || ['is', 'are', 'isn::t'];
+    my $copula      = $args{copula}     || ['is', 'are'];
 
     # Both declarator and copula can contain more than one entries;
     # normalize into an arrayref if we only have on entry.
@@ -62,9 +62,19 @@ sub import {
     # Establish prototypes (same as "use subs") so Sub::Override can work
     {
         no strict 'refs';
-        *{"$from\::$_"}     = \&{"$from\::$_"} for keys %$mapping;
-        *{"UNIVERSAL::$_"}  = \&{"UNIVERSAL::$_"} for keys %$copula;
-        *{"$_\::AUTOLOAD"}  = \&{"$_\::AUTOLOAD"} for keys %$copula;
+        _predeclare(
+            (map { "$from\::$_" } keys %$mapping),
+            (map { ("UNIVERSAL::$_", "$_\::AUTOLOAD") } keys %$copula),
+        );
+    }
+}
+
+# Same as "use sub".  All is fair if you predeclare.
+sub _predeclare {
+    no strict 'refs';
+    no warnings 'redefine';
+    foreach my $sym (@_) {
+        *$sym = \&$sym;
     }
 }
 
@@ -87,7 +97,7 @@ sub _declare {
         # Sub::Override cannot handle empty symbol slots.  This is normally
         # redundant (&import already did that), but we do it here anyway to
         # guard against runtime deletion of symbol table entries.
-        *$sym = \&$sym;
+        _predeclare($sym);
 
         # Now replace the symbol for real.
         $override->replace($sym => $code);
