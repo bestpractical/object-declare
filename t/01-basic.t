@@ -5,6 +5,9 @@ use ok 'Object::Declare' =>
         is  => '',
         are => 'plural_',
     },
+    aliases => {
+        field2 => 'fun',
+    },
     mapping => {
         column  => 'MyApp::Column',
         alt_col => sub { return { alt => 1, @_ } }
@@ -38,7 +41,7 @@ is_deeply(\@objects => [
             },
     y => {
             'field1' => 'yyy',
-            'field2' => 'YYY',
+            'fun' => 'YYY',
             'alt'    => 1,
             happy    => '',
             },
@@ -56,7 +59,7 @@ is_deeply($objects => {
             },
     y => {
             'field1' => 'yyy',
-            'field2' => 'YYY',
+            'fun' => 'YYY',
             'alt'    => 1,
             happy    => '',
             },

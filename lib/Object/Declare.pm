@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.12';
+$Object::Declare::VERSION = '0.13';
 
 use Sub::Override;
 
@@ -14,6 +14,7 @@ sub import {
     my $from        = caller;
 
     my $mapping     = $args{mapping} or return;
+    my $aliases     = $args{aliases}    || {};
     my $declarator  = $args{declarator} || ['declare'];
     my $copula      = $args{copula}     || ['is', 'are'];
 
@@ -54,7 +55,7 @@ sub import {
         no strict 'refs';
 
         *{"$from\::$sym"} = sub (&) {
-            unshift @_, ($mapping, $copula);
+            unshift @_, ($mapping, $copula, $aliases);
             goto &_declare;
         };
     }
@@ -79,7 +80,7 @@ sub _predeclare {
 }
 
 sub _declare {
-    my ($mapping, $copula, $code) = @_;
+    my ($mapping, $copula, $aliases, $code) = @_;
     my $from = caller;
 
     # Table of collected objects.
@@ -110,14 +111,18 @@ sub _declare {
     while (my ($sym, $prefix) = each %$copula) {
         $replace->( "UNIVERSAL::$sym" => sub {
             # Turn "is some_field" into "some_field is 1"
-            bless([$prefix.$_[0], 1] => 'Object::Declare::Katamari');
+            my $key = $prefix.$_[0];
+            $key = $aliases->{$key} if $aliases and exists $aliases->{$key};
+            bless( [$key, 1] => 'Object::Declare::Katamari' );
         } );
         $replace->( "$sym\::AUTOLOAD" => sub {
             # Handle "some_field is $some_value"
             shift;
             my $field = our $AUTOLOAD;
             $field =~ s/.*:://;
-            unshift @_, $prefix.$field;
+            my $key = $prefix.$field;
+            $key = $aliases->{$key} if $aliases and exists $aliases->{$key};
+            unshift @_, $key;
             bless(\@_, 'Object::Declare::Katamari');
         } );
     }
@@ -221,6 +226,10 @@ functions names (I<declarator>), words to link labels and values together
             is  => '',                  #  from copula to prefixes for
             are => '',                  #  labels built with that copula
         }
+        aliases     => {                # list of label aliases:
+            more => 'less',             #  turns "is more" into "is less"
+                                        #  and "more is 1" into "less is 1"
+        },
         mapping     => {
             column => 'MyApp::Column',  # class name to call ->new to
             param  => sub {             # arbitrary coderef also works

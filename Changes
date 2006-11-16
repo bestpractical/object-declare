@@ -1,3 +1,8 @@
+[Changes for 0.13 - 2006-07-21]
+
+* Introduce the "synonyms" interface, a mapping for alternate
+  spelling for field names.
+
 [Changes for 0.12 - 2006-07-20]
 
 * The "isn't" keyword in 0.11 broke Test::More, and I can't find a
