@@ -1,3 +1,14 @@
+[Changes for 0.20 - 2007-01-16]
+
+* Sub::Override is no longer a dependency for this module.
+
+* Values in declarations can now contain nested sub-objects by
+  calling the declarators again:
+
+    column foo => field is column( field is 'foo' );
+
+  Contributed by: Jason Adams
+
 [Changes for 0.13 - 2006-07-21]
 
 * Introduce the "synonyms" interface, a mapping for alternate

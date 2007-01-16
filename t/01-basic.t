@@ -21,29 +21,38 @@ sub do_declare { declare {
         is happy,
         field1 is 'xxx',
         field2 are 'XXX', 'XXX',
-        is field3;
+        is field3,
+        parts are column( is happy ), column( !is happy );
 
     alt_col y =>
         !is happy,
         field1 is 'yyy',
-        field2 is 'YYY';
+        field2 is 'YYY',
+        col is column( is happy );
 } }
 
 my @objects = do_declare;
 
 is_deeply(\@objects => [
     x => {
+            'name' => 'x',
             'field1' => 'xxx',
             'plural_field2' => ['XXX', 'XXX'],
+            'plural_parts' =>[ { happy => 1 },{ happy => '' },],
             'field3' => 1,
             'rw' => 1,
             'happy' => 1,
             },
     y => {
+            'name' => 'y',
             'field1' => 'yyy',
             'fun' => 'YYY',
             'alt'    => 1,
             happy    => '',
+            col      => {
+                          'name' => 'col',
+                          'happy' => 1,
+                        }
             },
 ], 'object declared correctly (list context)');
 
@@ -51,17 +60,24 @@ my $objects = do_declare;
 
 is_deeply($objects => {
     x => {
+            'name' => 'x',
             'field1' => 'xxx',
             'plural_field2' => ['XXX', 'XXX'],
+            'plural_parts' =>[ {happy => 1},{happy => ''},],
             'field3' => 1,
             'rw' => 1,
             'happy' => 1,
             },
     y => {
+            'name' => 'y',
             'field1' => 'yyy',
             'fun' => 'YYY',
             'alt'    => 1,
             happy    => '',
+            col      => {
+                          'name' => 'col',
+                          'happy' => 1,
+                        }
             },
 }, 'object declared correctly (scalar context)');
 

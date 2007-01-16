@@ -4,9 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.13';
-
-use Sub::Override;
+$Object::Declare::VERSION = '0.20';
 
 sub import {
     my $class       = shift;
@@ -88,7 +86,7 @@ sub _declare {
 
     # Establish a lexical extent for overrided symbols; they will be
     # restored automagically upon scope exit.
-    my $override = Sub::Override->new;
+    my %subs_replaced;
     my $replace = sub {
         no strict 'refs';
         no warnings 'redefine';
@@ -101,7 +99,8 @@ sub _declare {
         _predeclare($sym);
 
         # Now replace the symbol for real.
-        $override->replace($sym => $code);
+        $subs_replaced{$sym} ||= *$sym{CODE};
+        *$sym = $code;
     };
 
     # In DSL (domain-specific language) mode; install AUTOLOAD to handle all
@@ -135,6 +134,13 @@ sub _declare {
     # Let's play Katamari!
     &$code;
 
+    # Restore overriden subs
+    while (my ($sym, $code) = each %subs_replaced) {
+        no strict 'refs';
+        no warnings 'redefine';
+        *$sym = $code;
+    }
+
     # In scalar context, returns hashref; otherwise preserve ordering
     return(wantarray ? @objects : { @objects });
 }
@@ -144,8 +150,19 @@ sub _make_object {
     my ($build, $schema) = @_;
 
     return sub {
-        my $name = shift;
-        push @$schema, $name => $build->(map { $_->unroll } @_);
+        my $name   = ( ref( $_[0] ) ? undef : shift );
+        my $args   = \@_;
+        my $damacy = bless(sub {
+            $build->(
+                ( $_[0] ? ( name => $_[0] ) : () ),
+                map { $_->unroll } @$args
+            );
+        } => 'Object::Declare::Damacy');
+        if (wantarray) {
+            return ($damacy);
+        } else {
+            push @$schema, $name => $damacy->($name);
+        }
     };
 }
 
@@ -170,10 +187,16 @@ sub unroll {
 
     if (@katamari == 1) {
         # single value: "is foo"
+        if ( ref( $katamari[0] ) eq 'Object::Declare::Damacy' ) {
+            $katamari[0] = $katamari[0]->($field);
+        }
         return($field => @katamari, @unrolled);
     }
     else {
         # Multiple values: "are qw( foo bar baz )"
+        foreach my $kata (@katamari) {
+            $kata = $kata->() if ref($kata) eq 'Object::Declare::Damacy';
+        }
         return($field => \@katamari, @unrolled);
     }
 }
@@ -199,12 +222,17 @@ Object::Declare - Declarative object constructor
 
     column bar =>
         field1 is 'value',
-        field2 is 'some_other_value';
+        field2 is 'some_other_value',
+        sub_params are param( is happy ), param ( is sad );
 
     };
 
     print $objects{foo}; # a MyApp::Param object
     print $objects{bar}; # a MyApp::Column object
+
+    # Assuming that MyApp::Column::new simply blesses into a hash...
+    print $objects{bar}{sub_params}[0]; # a MyApp::Param object
+    print $objects{bar}{sub_params}[1]; # a MyApp::Param object
 
 =head1 DESCRIPTION
 
@@ -259,25 +287,32 @@ The copula are not turned into functions, so there is no need to export them.
 
 Audrey Tang E<lt>cpan@audreyt.orgE<gt>
 
-=head1 COPYRIGHT (The "MIT" License)
+=head1 COPYRIGHT
 
-Copyright 2006 by Audrey Tang <cpan@audreyt.org>.
+Copyright 2006, 2007 by Audrey Tang <cpan@audreyt.org>.
+
+This software is released under the MIT license cited below.  Additionally,
+when this software is distributed with B<Perl Kit, Version 5>, you may also
+redistribute it and/or modify it under the same terms as Perl itself.
+
+=head2 The "MIT" License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is fur-
-nished to do so, subject to the following conditions:
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FIT-
-NESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE X
-CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 =cut

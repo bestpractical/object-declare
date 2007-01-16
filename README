@@ -7,17 +7,23 @@ SYNOPSIS
         my %objects = declare {
 
         param foo =>
+           !is global,
             is immutable,
             valid_values are qw( more values );
 
         column bar =>
             field1 is 'value',
-            field2 is 'some_other_value';
+            field2 is 'some_other_value',
+            sub_params are param( is happy ), param ( is sad );
 
         };
 
         print $objects{foo}; # a MyApp::Param object
         print $objects{bar}; # a MyApp::Column object
+
+        # Assuming that MyApp::Column::new simply blesses into a hash...
+        print $objects{bar}{sub_params}[0]; # a MyApp::Param object
+        print $objects{bar}{sub_params}[1]; # a MyApp::Param object
 
 DESCRIPTION
     This module exports one function, "declare", for building named objects
@@ -33,29 +39,58 @@ DESCRIPTION
     (*copula*), and the table of named classes to declare (*mapping*):
 
         use Object::Declare
-            declarator  => 'declare',       # this is the default
-            copula      => ['is', 'are'],   # this is the default
+            declarator  => ['declare'],     # list of declarators
+            copula      => {                # list of words, or a map
+                is  => '',                  #  from copula to prefixes for
+                are => '',                  #  labels built with that copula
+            }
+            aliases     => {                # list of label aliases:
+                more => 'less',             #  turns "is more" into "is less"
+                                            #  and "more is 1" into "less is 1"
+            },
             mapping     => {
-                column => 'MyApp::Column',
-                param  => 'MyApp::Param',
+                column => 'MyApp::Column',  # class name to call ->new to
+                param  => sub {             # arbitrary coderef also works
+                    bless(\@_, 'MyApp::Param');
+                },
             };
 
     After the declarator block finishes execution, all helper functions are
     removed from the package. Same-named functions (such as &is and &are)
     that existed before the declarator's execution are restored correctly.
 
+NOTES
+    If you export the declarator to another package via @EXPORT, be sure to
+    export all mapping keys as well. For example, this will work for the
+    example above:
+
+        our @EXPORT = qw( declare column param );
+
+    But this will not:
+
+        our @EXPORT = qw( declare );
+
+    The copula are not turned into functions, so there is no need to export
+    them.
+
 AUTHORS
     Audrey Tang <cpan@audreyt.org>
 
-COPYRIGHT (The "MIT" License)
-    Copyright 2006 by Audrey Tang <cpan@audreyt.org>.
+COPYRIGHT
+    Copyright 2006, 2007 by Audrey Tang <cpan@audreyt.org>.
 
+    This software is released under the MIT license cited below.
+    Additionally, when this software is distributed with Perl Kit, Version
+    5, you may also redistribute it and/or modify it under the same terms as
+    Perl itself.
+
+  The "MIT" License
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the
     "Software"), to deal in the Software without restriction, including
     without limitation the rights to use, copy, modify, merge, publish,
     distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is fur- nished to do so, subject to
+    permit persons to whom the Software is furnished to do so, subject to
     the following conditions:
 
     The above copyright notice and this permission notice shall be included
@@ -63,9 +98,9 @@ COPYRIGHT (The "MIT" License)
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
     OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FIT- NESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-    IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
-    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-    OTHER DEALINGS IN THE SOFTWARE.
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
