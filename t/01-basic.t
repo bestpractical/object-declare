@@ -10,8 +10,12 @@ use ok 'Object::Declare' =>
     },
     mapping => {
         column  => 'MyApp::Column',
-        alt_col => sub { return { alt => 1, @_ } }
+        alt_col => sub { return { alt => column(), @_ } }
     };
+
+sub column {
+    1;
+}
 
 sub MyApp::Column::new { shift; return { @_ } }
 
