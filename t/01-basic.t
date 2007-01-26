@@ -13,9 +13,7 @@ use ok 'Object::Declare' =>
         alt_col => sub { return { alt => column(), @_ } }
     };
 
-sub column {
-    1;
-}
+sub column { 1 }
 
 sub MyApp::Column::new { shift; return { @_ } }
 

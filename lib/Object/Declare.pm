@@ -126,9 +126,18 @@ sub _declare {
         } );
     }
 
+    my @overridden = map { "$from\::$_" } keys %$mapping;
     # Now install the collector symbols from class mappings 
+    my $toggle_subs = sub {
+        foreach my $sym (@overridden) {
+            no strict 'refs';
+            no warnings 'redefine';
+            ($subs_replaced{$sym}, *$sym) = (*$sym{CODE}, $subs_replaced{$sym});
+        }
+    };
+
     while (my ($sym, $build) = each %$mapping) {
-        $replace->("$from\::$sym" => _make_object($build => \@objects));
+        $replace->("$from\::$sym" => _make_object($build => \@objects, $toggle_subs));
     }
 
     # Let's play Katamari!
@@ -147,17 +156,28 @@ sub _declare {
 
 # Make a star from the Katamari!
 sub _make_object {
-    my ($build, $schema) = @_;
+    my ($build, $schema, $toggle_subs) = @_;
 
     return sub {
+        # Restore overriden subs
+        no strict 'refs';
+        no warnings 'redefine';
+
         my $name   = ( ref( $_[0] ) ? undef : shift );
         my $args   = \@_;
         my $damacy = bless(sub {
-            $build->(
+            $toggle_subs->();
+
+            my $rv = $build->(
                 ( $_[0] ? ( name => $_[0] ) : () ),
                 map { $_->unroll } @$args
             );
+
+            $toggle_subs->();
+
+            return $rv;
         } => 'Object::Declare::Damacy');
+
         if (wantarray) {
             return ($damacy);
         } else {
