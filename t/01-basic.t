@@ -20,14 +20,14 @@ sub MyApp::Column::new { shift; return { @_ } }
 sub do_declare { declare {
     column x =>
         is rw,
-        is happy,
+        is Very::Happy,
         field1 is 'xxx',
         field2 are 'XXX', 'XXX',
         is field3,
         parts are column( is happy ), column( !is happy );
 
     alt_col y =>
-        !is happy,
+        !is Very::Happy,
         field1 is 'yyy',
         field2 is 'YYY',
         col is column( is happy );
@@ -43,18 +43,18 @@ is_deeply(\@objects => [
             'plural_parts' =>[ { happy => 1 },{ happy => '' },],
             'field3' => 1,
             'rw' => 1,
-            'happy' => 1,
+            'Very::Happy' => 1,
             },
     y => {
             'name' => 'y',
             'field1' => 'yyy',
             'fun' => 'YYY',
             'alt'    => 1,
-            happy    => '',
             col      => {
                           'name' => 'col',
                           'happy' => 1,
-                        }
+                        },
+            'Very::Happy' => '',
             },
 ], 'object declared correctly (list context)');
 
@@ -68,18 +68,18 @@ is_deeply($objects => {
             'plural_parts' =>[ {happy => 1},{happy => ''},],
             'field3' => 1,
             'rw' => 1,
-            'happy' => 1,
+            'Very::Happy' => 1,
             },
     y => {
             'name' => 'y',
             'field1' => 'yyy',
             'fun' => 'YYY',
             'alt'    => 1,
-            happy    => '',
             col      => {
                           'name' => 'col',
                           'happy' => 1,
-                        }
+                        },
+            'Very::Happy' => '',
             },
 }, 'object declared correctly (scalar context)');
 

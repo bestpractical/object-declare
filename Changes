@@ -1,3 +1,23 @@
+[Changes for 0.21 - 2007-01-26]
+
+* Helper functions for mapping keys are no longer present within
+  dynamic scope of mapping construction callbacks; this allows you
+  to have call a method that has the same name as a mapping key
+  during ->new() and other callbacks.
+
+* Support for fully qualified fields: "Very::Happy is 42" and
+  "is Very::Happy" are valid even when Very::Happy is not yet loaded.
+
+* Support for associating coderefs with copula for even more
+  flexible rewriting of arguments:
+
+    copula      => {                # list of words, or a map
+        is  => '',                  #  from copula to label prefixes,
+        are => '',                  #  or to callback that e.g. turns
+        has => sub { has => @_ },   #  "has X" to "has is X" and
+                                    #  "X has 1" to "has is [X => 1]"
+    },
+
 [Changes for 0.20 - 2007-01-16]
 
 * Sub::Override is no longer a dependency for this module.

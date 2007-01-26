@@ -41,9 +41,11 @@ DESCRIPTION
         use Object::Declare
             declarator  => ['declare'],     # list of declarators
             copula      => {                # list of words, or a map
-                is  => '',                  #  from copula to prefixes for
-                are => '',                  #  labels built with that copula
-            }
+                is  => '',                  #  from copula to label prefixes,
+                are => '',                  #  or to callback that e.g. turns
+                has => sub { has => @_ },   #  "has X" to "has is X" and
+                                            #  "X has 1" to "has is [X => 1]"
+            },
             aliases     => {                # list of label aliases:
                 more => 'less',             #  turns "is more" into "is less"
                                             #  and "more is 1" into "less is 1"
@@ -80,9 +82,6 @@ COPYRIGHT
     Copyright 2006, 2007 by Audrey Tang <cpan@audreyt.org>.
 
     This software is released under the MIT license cited below.
-    Additionally, when this software is distributed with Perl Kit, Version
-    5, you may also redistribute it and/or modify it under the same terms as
-    Perl itself.
 
   The "MIT" License
     Permission is hereby granted, free of charge, to any person obtaining a

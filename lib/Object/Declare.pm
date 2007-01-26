@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.20';
+$Object::Declare::VERSION = '0.21';
 
 sub import {
     my $class       = shift;
@@ -110,19 +110,26 @@ sub _declare {
     while (my ($sym, $prefix) = each %$copula) {
         $replace->( "UNIVERSAL::$sym" => sub {
             # Turn "is some_field" into "some_field is 1"
-            my $key = $prefix.$_[0];
+            my ($key, @vals) = ref($prefix) ? $prefix->(@_) : ($prefix.$_[0] => 1) or return;
+
             $key = $aliases->{$key} if $aliases and exists $aliases->{$key};
-            bless( [$key, 1] => 'Object::Declare::Katamari' );
+            unshift @vals, $key;
+            bless( \@vals => 'Object::Declare::Katamari' );
         } );
         $replace->( "$sym\::AUTOLOAD" => sub {
             # Handle "some_field is $some_value"
             shift;
+
             my $field = our $AUTOLOAD;
-            $field =~ s/.*:://;
-            my $key = $prefix.$field;
+            return if $field =~ /DESTROY$/;
+
+            $field =~ s/^\Q$sym\E:://;
+
+            my ($key, @vals) = ref($prefix) ? $prefix->($field, @_) : ($prefix.$field => @_) or return;
+
             $key = $aliases->{$key} if $aliases and exists $aliases->{$key};
-            unshift @_, $key;
-            bless(\@_, 'Object::Declare::Katamari');
+            unshift @vals, $key;
+            bless( \@vals, 'Object::Declare::Katamari' );
         } );
     }
 
@@ -271,9 +278,11 @@ functions names (I<declarator>), words to link labels and values together
     use Object::Declare
         declarator  => ['declare'],     # list of declarators
         copula      => {                # list of words, or a map
-            is  => '',                  #  from copula to prefixes for
-            are => '',                  #  labels built with that copula
-        }
+            is  => '',                  #  from copula to label prefixes,
+            are => '',                  #  or to callback that e.g. turns
+            has => sub { has => @_ },   #  "has X" to "has is X" and
+                                        #  "X has 1" to "has is [X => 1]"
+        },
         aliases     => {                # list of label aliases:
             more => 'less',             #  turns "is more" into "is less"
                                         #  and "more is 1" into "less is 1"
@@ -311,9 +320,7 @@ Audrey Tang E<lt>cpan@audreyt.orgE<gt>
 
 Copyright 2006, 2007 by Audrey Tang <cpan@audreyt.org>.
 
-This software is released under the MIT license cited below.  Additionally,
-when this software is distributed with B<Perl Kit, Version 5>, you may also
-redistribute it and/or modify it under the same terms as Perl itself.
+This software is released under the MIT license cited below.
 
 =head2 The "MIT" License
 
