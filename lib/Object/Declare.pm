@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-$Object::Declare::VERSION = '0.21';
+$Object::Declare::VERSION = '0.22';
 
 sub import {
     my $class       = shift;
@@ -111,7 +111,10 @@ sub _declare {
         $replace->( "UNIVERSAL::$sym" => sub {
             # Turn "is some_field" into "some_field is 1"
             my ($key, @vals) = ref($prefix) ? $prefix->(@_) : ($prefix.$_[0] => 1) or return;
-
+            # If the copula returns a ready-to-use katamari object,
+            # don't try to roll it by ourself.
+            return $key
+                if ref($key) && ref($key) eq 'Object::Declare::Katamari';
             $key = $aliases->{$key} if $aliases and exists $aliases->{$key};
             unshift @vals, $key;
             bless( \@vals => 'Object::Declare::Katamari' );
