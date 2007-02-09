@@ -198,7 +198,7 @@ sub _make_object {
 
 package Object::Declare::Katamari;
 
-use overload "!" => \&negation;
+use overload "!" => \&negation, fallback => 1;
 
 sub negation {
     my @katamari = @{$_[0]} or return ();

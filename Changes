@@ -1,3 +1,13 @@
+[Changes for 0.22 - 2007-02-09]
+
+* Allow declarations in copula callbacks as return value:
+
+    copula => foo => sub { bar is 1, baz is 2 }
+
+* No longer raise bogus "overload method not found" errors
+  when paritally-formed declarations objects is e.g. printed
+  out for debugging purposes.
+
 [Changes for 0.21 - 2007-01-26]
 
 * Helper functions for mapping keys are no longer present within
